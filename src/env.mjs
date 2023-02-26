@@ -22,8 +22,8 @@ const server = z.object({
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
-  "X-RapidAPI-Key": z.string().min(1),
-  "X-RapidAPI-Host": z.string().min(1),
+  RAPID_API_KEY: z.string().min(1),
+  RAPID_API_HOST: z.string().min(1),
 });
 
 /**
@@ -49,8 +49,8 @@ const processEnv = {
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  "X-RapidAPI-Key": process.env["X-RapidAPI-Key"],
-  "X-RapidAPI-Host": process.env["X-RapidAPI-Host"],
+  RAPID_API_KEY: process.env.RAPID_API_KEY,
+  RAPID_API_HOST: process.env.RAPID_API_HOST,
 };
 
 // Don't touch the part below
