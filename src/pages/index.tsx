@@ -1,29 +1,54 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { type NextPage } from "next";
-import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
-import Image from "next/image";
-import { type FC, Fragment, useState, type FormEvent } from "react";
+import { Fragment, useState, type FC } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 import { api } from "~/utils/api";
+import Header from "./components/Header";
 
 const Home: NextPage = () => {
-  const { data: sessionData } = useSession();
-
   const { mutate: generateHaiku, isLoading } =
     api.example.generateHaiku.useMutation({
+      onMutate: () => {
+        setHaiku("");
+        setError("");
+      },
       onSuccess: (data) => {
+        setError("");
         setHaiku(data);
-        setInput("");
+        resetField("topic");
+      },
+      onError: (error) => {
+        setError(error.message);
       },
     });
 
-  const [input, setInput] = useState<string>("");
   const [haiku, setHaiku] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
-  const handleSubmit = (evt: FormEvent<HTMLFormElement>) => {
-    evt.preventDefault();
-    if (input.length === 0) return;
-    generateHaiku({ topic: input });
+  const onSubmit: SubmitHandler<FormSchema> = (data) => {
+    console.log(data);
+    generateHaiku({ topic: data.topic });
   };
+
+  const formSchema = z.object({
+    topic: z
+      .string()
+      .min(5, { message: "Please input at least 5 characters" })
+      .max(100),
+  });
+  type FormSchema = z.infer<typeof formSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    resetField,
+    formState: { errors },
+  } = useForm<FormSchema>({
+    resolver: zodResolver(formSchema),
+    mode: "onSubmit",
+  });
 
   return (
     <>
@@ -33,52 +58,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <header className="absolute flex h-20 w-full items-center justify-between bg-indigo-100 px-5">
-        <span className="text-lg font-bold">Haiku Generator</span>
-        {sessionData ? (
-          <div>
-            <div className="flex items-center gap-2">
-              {/* Profile Pic */}
-              <div className="relative flex h-10 w-10">
-                <Image
-                  className=" rounded-full"
-                  fill
-                  src={sessionData.user.image ?? ""}
-                  alt="Profile picture"
-                />
-              </div>
-              {/* Name & Email */}
-              <div className="flex flex-col">
-                <span className="text-md font-bold">
-                  Welcome, {sessionData.user.name}
-                </span>
-                <span className="text-md font-light text-gray-700">
-                  {sessionData.user.email}
-                </span>
-              </div>
-
-              {/* Sign out button */}
-              <button
-                type="button"
-                className="text-2xl"
-                onClick={() => void signOut()}
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                ✌️
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="text-lg"
-            onClick={() => void signIn("github")}
-          >
-            Sign in with Github
-          </button>
-        )}
-      </header>
+      <Header />
 
       <main className="flex h-full min-h-screen flex-col items-center justify-center gap-10 p-6">
         <h1 className="text-center text-2xl font-bold">
@@ -86,21 +66,26 @@ const Home: NextPage = () => {
         </h1>
 
         <form
-          onSubmit={handleSubmit}
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
+          onSubmit={handleSubmit(onSubmit)}
           className="flex w-full max-w-xl flex-col justify-center gap-2"
         >
           <label htmlFor="topic" className="sr-only">
             Haiku topic
           </label>
           <input
+            {...register("topic")}
             id="topic"
             type="text"
             placeholder="Danny Devito"
             max={100}
             className="rounded-lg border p-3 transition-colors hover:border-indigo-300"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
           />
+          {errors.topic && (
+            <label className="text-red-700" htmlFor="topic">
+              {errors.topic.message}
+            </label>
+          )}
 
           <button
             type="submit"
@@ -111,16 +96,14 @@ const Home: NextPage = () => {
             {isLoading ? <Spinner /> : "Generate"}
           </button>
         </form>
-        <div className="h-40 w-full max-w-xl cursor-default rounded-md border border-indigo-200  p-10 text-center italic leading-6 transition-colors hover:border-indigo-300">
-          {haiku
-            .trim()
-            .split("\n")
-            .map((line, i) => (
-              <Fragment key={i}>
-                {line}
-                <br />
-              </Fragment>
-            ))}
+        <div className="relative h-40 w-full max-w-xl cursor-default rounded-md border border-indigo-200  p-10 text-center italic leading-6 transition-colors hover:border-indigo-300">
+          <pre className="font-sans">{error ? error : haiku.trim()}</pre>
+          <button
+            hidden
+            className="absolute top-1 right-1 rounded-md border border-indigo-200 bg-gray-100 px-2 py-1 text-sm transition-all hover:border-indigo-400"
+          >
+            save
+          </button>
         </div>
       </main>
     </>

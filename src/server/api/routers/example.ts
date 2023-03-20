@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { Configuration, OpenAIApi } from "openai";
-import { syllable } from "syllable";
 import { env } from "~/env.mjs";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { type Model } from "~/types/models";
+import { Configuration, OpenAIApi } from "openai";
 
 const configuration = new Configuration({
   apiKey: env.OPENAI_API_KEY,
@@ -20,53 +20,58 @@ export const exampleRouter = createTRPCRouter({
       const { topic } = input;
 
       try {
+        const model: Model = "gpt-4";
         const generateHaiku = () =>
-          openai.createCompletion({
-            model: "text-davinci-003",
-            prompt: generateHaikuPrompt(topic),
-            temperature: 1,
+          openai.createChatCompletion({
+            model,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You only write haikus about the topic you are given. You only write original, Japanese style haikus following the 5-7-5 rule.",
+              },
+              {
+                role: "user",
+                content: "Write a haiku about " + topic,
+              },
+            ],
+            temperature: 0.8,
             max_tokens: 256,
-            best_of: 5,
           });
 
-        const maxAttempts = 1;
+        const maxAttempts = 3;
 
         for (let i = 0; i < maxAttempts; i++) {
           const completion = await generateHaiku();
 
-          if (!completion.data.choices[0]?.text) {
-            throw new Error("No completion text");
+          if (!completion.data.choices[0]?.message) {
+            throw new Error("No completion message");
           }
 
-          const haiku = completion.data.choices[0].text;
+          const haiku = completion.data.choices[0].message.content;
 
           const lines = haiku.trim().split("\n");
           console.log("LINES", lines, lines.length);
 
-          const syllables = lines.map((line) => syllable(line));
-          console.log("SYLLABLES", syllables);
-
-          const isValidHaiku =
-            syllables.length === 3 &&
-            syllables[0] === 5 &&
-            syllables[1] === 7 &&
-            syllables[2] === 5;
-
-          if (isValidHaiku) {
-            // console.log(`GENERATED ${i + 1} HAIKUS`);
+          if (lines.length === 3) {
             console.log("HAIKU VALID", haiku);
+            return haiku;
           }
-
-          return haiku;
         }
 
         throw new Error("No valid haiku found");
       } catch (e) {
-        throw new Error("Error creating completion");
+        throw new Error(getRandomErrorMessage());
       }
     }),
 });
 
-function generateHaikuPrompt(topic: string) {
-  return `Write a traditional Japanese style haiku about ${topic}. It must follow the 5-7-5 syllable rule:`;
-}
+const errorMessages = [
+  "Broken program sighs,\nHaiku eludes its coding,\nError message cries.",
+  "Error message thrown\nHaiku generator failed\nSilence fills the screen",
+  "Syntax error looms,\nHaiku lost in translation.\nCode in disarray.",
+];
+
+const getRandomErrorMessage = () => {
+  return errorMessages[Math.floor(Math.random() * errorMessages.length)];
+};
