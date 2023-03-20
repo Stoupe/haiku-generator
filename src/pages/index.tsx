@@ -17,6 +17,7 @@ const Home: NextPage = () => {
       onSuccess: (data) => {
         setError("");
         setHaiku(data);
+        setHaikuSaved(false);
         resetField("topic");
       },
       onError: (error) => {
@@ -24,7 +25,24 @@ const Home: NextPage = () => {
       },
     });
 
+  const { mutate: saveHaiku } = api.example.saveHaiku.useMutation({
+    onMutate: () => {
+      setHaikuSaved(true);
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      setHaikuSaved(true);
+      //toast.success("Haiku saved!");
+    },
+    onError: (error) => {
+      console.log(error);
+      setHaikuSaved(false);
+      //toast.error("Haiku could not be saved");
+    },
+  });
+
   const [haiku, setHaiku] = useState<string>("");
+  const [haikuSaved, setHaikuSaved] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
   const onSubmit: SubmitHandler<FormSchema> = (data) => {
@@ -99,7 +117,10 @@ const Home: NextPage = () => {
         <div className="relative h-40 w-full max-w-xl cursor-default rounded-md border border-indigo-200  p-10 text-center italic leading-6 transition-colors hover:border-indigo-300">
           <pre className="font-sans">{error ? error : haiku.trim()}</pre>
           <button
-            hidden
+            onClick={() => {
+              saveHaiku({ haiku: haiku.trim() });
+            }}
+            hidden={!haiku || haikuSaved}
             className="absolute top-1 right-1 rounded-md border border-indigo-200 bg-gray-100 px-2 py-1 text-sm transition-all hover:border-indigo-400"
           >
             save

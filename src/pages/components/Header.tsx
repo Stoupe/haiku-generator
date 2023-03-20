@@ -1,5 +1,6 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 
 const Header = () => {
   const { data: sessionData } = useSession();
@@ -8,37 +9,42 @@ const Header = () => {
     <header className="absolute flex h-20 w-full items-center justify-between bg-indigo-100 px-5">
       <span className="text-lg font-bold">Haiku Generator</span>
       {sessionData ? (
-        <div>
-          <div className="flex items-center gap-2">
-            {/* Profile Pic */}
-            <div className="relative flex h-10 w-10">
-              <Image
-                className=" rounded-full"
-                fill
-                src={sessionData.user.image ?? ""}
-                alt="Profile picture"
-              />
-            </div>
-            {/* Name & Email */}
-            <div className="flex flex-col">
-              <span className="text-md font-bold">
-                Welcome, {sessionData.user.name}
-              </span>
-              <span className="text-md font-light text-gray-700">
-                {sessionData.user.email}
-              </span>
-            </div>
+        <div className="flex items-center gap-10">
+          <Link className="underline" href={"/haikus"}>
+            Saved haikus
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              {/* Profile Pic */}
+              <div className="relative flex h-10 w-10">
+                <Image
+                  className=" rounded-full"
+                  fill
+                  src={sessionData.user.image ?? ""}
+                  alt="Profile picture"
+                />
+              </div>
+              {/* Name & Email */}
+              <div className="flex flex-col">
+                <span className="text-md font-bold">
+                  Welcome, {sessionData.user.name}
+                </span>
+                <span className="text-md font-light text-gray-700">
+                  {sessionData.user.email}
+                </span>
+              </div>
 
-            {/* Sign out button */}
-            <button
-              type="button"
-              className="text-2xl"
-              onClick={() => void signOut()}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              ✌️
-            </button>
+              {/* Sign out button */}
+              <button
+                type="button"
+                className="text-2xl"
+                onClick={() => void signOut()}
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                ✌️
+              </button>
+            </div>
           </div>
         </div>
       ) : (

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { env } from "~/env.mjs";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import { type Model } from "~/types/models";
 import { Configuration, OpenAIApi } from "openai";
 
@@ -10,6 +14,32 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export const exampleRouter = createTRPCRouter({
+  getMySavedHaikus: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.session.user;
+
+    const haikus = await ctx.prisma.haiku.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    return haikus;
+  }),
+  saveHaiku: protectedProcedure
+    .input(z.object({ haiku: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { haiku } = input;
+      const user = ctx.session.user;
+
+      const savedHaiku = await ctx.prisma.haiku.create({
+        data: {
+          haiku,
+          userId: user.id,
+        },
+      });
+
+      return savedHaiku;
+    }),
   generateHaiku: publicProcedure
     .input(
       z.object({
